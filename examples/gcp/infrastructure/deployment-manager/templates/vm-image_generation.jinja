@@ -1,0 +1,18 @@
+imports:
+
+  - name: vm-public_ssh.jinja
+    path: vm-public_ssh.jinja
+
+
+resources:
+
+  - name: {{ properties["name"] }}
+    type: vm-public_ssh.jinja
+    properties:
+      name: {{ properties["name"] }}
+      machineType: n1-standard-1
+      sourceImageRelUrl: {{ properties["sourceImageRelUrl"] }}
+      network: vpc-prep
+      subnetwork: sub-prep-europe-west1-pg
+      region: europe-west1
+      zone: europe-west1-b

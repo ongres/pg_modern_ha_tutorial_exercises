@@ -1,0 +1,25 @@
+---
+
+- name: start postgres
+  service:
+    name: postgresql
+    state: started
+  tags: patroni
+
+- name: start patroni
+  service:
+    name: patroni
+    state: started
+  tags: patroni
+
+- name: stop patroni
+  service:
+    name: patroni
+    state: stopped
+  tags: patroni
+
+- name: stop patroni2
+  systemd:
+    name: patroni.service
+    state: stopped
+  tags: patroni

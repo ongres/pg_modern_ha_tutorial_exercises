@@ -1,0 +1,33 @@
+resources:
+
+  - name: {{ properties["environment"] }}-etcd-cluster
+    type: private-template.jinja
+    properties:
+      machineType: n1-standard-1
+      sourceImageRelUrl: {{ env["project"] }}/global/images/img-etcd-base-img-ubuntu-base
+      network: vpc-{{ properties["environment"] }}
+      subnetwork: sub-{{ properties["environment"] }}-europe-west1-pg
+      region: europe-west1
+      instanceMetadata:
+        - key: etcd-cluster
+          value: {{ properties["etcdCluster"] }}
+        - key: startup-script
+          value: /usr/local/bin/fix_etcd_service.sh
+      instances:
+        {% for instance in properties["instances"] %}
+        - name: templ-{{ properties["environment"] }}-etcd-{{ instance["zone"] }}
+          ip: {{ instance["ip"] }}
+          zone: {{ instance["zone"] }}
+        {% endfor %}
+
+  - name: {{ properties["environment"] }}-etcd-groups
+    type: managed-instance-group.jinja
+    properties:
+      region: europe-west1
+      instances:
+        {% for instance in properties["instances"] %}
+        - name: group-{{ properties["environment"] }}-etcd-{{ instance["zone"] }}
+          baseInstanceName: vm-{{ properties["environment"] }}-etcd-group-{{ instance["zone"] }}
+          templateUrl: $(ref.templ-{{ properties["environment"] }}-etcd-{{ instance["zone"] }}.selfLink)
+          zone: {{ instance["zone"] }}
+        {% endfor %}

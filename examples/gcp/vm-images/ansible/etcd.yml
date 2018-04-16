@@ -1,0 +1,11 @@
+---
+- hosts: all
+  become: true
+  become_user: root
+  become_method: sudo
+  roles:
+  - role: etcd
+    etcd_install: true
+    etcd_service: true
+    etcd_cluster_name: cluster
+    etcd_cluster_data_dir: /var/lib/etcd

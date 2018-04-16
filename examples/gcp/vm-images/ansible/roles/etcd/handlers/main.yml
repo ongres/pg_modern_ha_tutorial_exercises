@@ -1,0 +1,5 @@
+---
+- name: restart etcd
+  service:
+    name: '{{ etcd_service_name }}'
+    state: restarted

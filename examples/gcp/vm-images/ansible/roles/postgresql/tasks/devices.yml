@@ -1,0 +1,49 @@
+---
+
+- name: format pgdata, pgxlog
+  filesystem:
+    fstype: xfs
+    dev: "{{ item.value.blk }}"
+    force: no
+  with_dict: "{{ devices }}"
+  tags: postgresql
+
+- name: mount pgdata, pgxlog; add to /etc/fstab
+  mount:
+    state: mounted
+    fstype: xfs
+    src: "{{ item.value.blk }}"
+    path: "/srv/{{ item.key }}"
+    opts: "{{ item.value.mount_opts }}"
+  with_dict: "{{ devices }}"
+  tags: postgresql
+
+- name: adjust permissions for pgdata, pgxlog
+  file:
+    state: directory
+    dest: "/srv/{{ item.key }}/9.6"
+    owner: postgres
+    group: postgres
+    mode: 0700
+  with_dict: "{{ devices }}"
+  tags: postgresql
+
+# - name: check pgdata is original installation directory
+#   stat:
+#     path: /var/lib/pgsql/9.6/data
+#   register: varlibpgsql
+
+# - name: delete original pgdata directory
+#   file:
+#     dest: /var/lib/pgsql/9.6/data
+#     state: absent
+#   when: not varlibpgsql.stat.islnk
+
+# - name: symlink to pgdata
+#   file:
+#     dest: /var/lib/pgsql/9.6/data
+#     src: /srv/pgdata/9.6
+#     state: link
+#     owner: postgres
+#     group: postgres
+#   when: not varlibpgsql.stat.islnk

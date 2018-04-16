@@ -1,0 +1,7 @@
+resources:
+
+  - name: {{ properties["name"] }}
+    type: vm-image_generation.jinja
+    properties:
+      name: {{ properties["name"] }}
+      sourceImageRelUrl: {{ env["project"] }}/global/images/img-ubuntu-base-ubuntu-1604-xenial-v20171208

@@ -1,0 +1,41 @@
+imports:
+
+  - name: subnet_ips.jinja
+    path: templates/subnet_ips.jinja
+  - name: subnet.jinja
+    path: templates/subnet.jinja
+
+
+resources:
+
+  - name: sub-prep-europe-west1-pg
+    type: subnet_ips.jinja
+    properties:
+      vpcName: prep
+      region: europe-west1
+      mainSubnetName: europe-west1-pg
+      mainIpCidrRange: 172.16.13.0/24
+      staticIps:
+        - {name: pg1, ip: 172.16.13.101}
+        - {name: pg2, ip: 172.16.13.102}
+        - {name: pg3, ip: 172.16.13.103}
+        - {name: etcd1, ip: 172.16.13.111}
+        - {name: etcd2, ip: 172.16.13.112}
+        - {name: etcd3, ip: 172.16.13.113}
+        - {name: entrypoint, ip: 172.16.13.121}
+
+  - name: sub-prod-europe-west1-pg
+    type: subnet_ips.jinja
+    properties:
+      vpcName: prod
+      region: europe-west1
+      mainSubnetName: europe-west1-pg
+      mainIpCidrRange: 172.16.14.0/24
+      staticIps:
+        - {name: pg1, ip: 172.16.14.101}
+        - {name: pg2, ip: 172.16.14.102}
+        - {name: pg3, ip: 172.16.14.103}
+        - {name: etcd1, ip: 172.16.14.111}
+        - {name: etcd2, ip: 172.16.14.112}
+        - {name: etcd3, ip: 172.16.14.113}
+        - {name: entrypoint, ip: 172.16.14.121}

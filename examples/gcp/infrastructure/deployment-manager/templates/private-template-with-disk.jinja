@@ -1,0 +1,49 @@
+{% set COMPUTE_URL_BASE = 'https://www.googleapis.com/compute/v1' %}
+{% set PROJECT_URL_BASE = COMPUTE_URL_BASE + '/projects/' + env["project"] %}
+
+
+resources:
+
+{% for instance in properties["instances"] %}
+
+- name: dsk-{{ instance["baseName"] }}-data
+  type: compute.v1.disk
+  properties:
+    sizeGb: {{ properties["dataDiskGb"] }}
+    type: {{ PROJECT_URL_BASE }}/zones/{{ properties["region"] }}-{{ instance["zone"] }}/diskTypes/pd-ssd
+    zone: {{ properties["region"] }}-{{ instance["zone"] }}
+
+- type: compute.v1.instanceTemplate
+  name: templ-{{ instance["baseName"] }}  
+  properties:
+    properties:
+      zone: {{ properties["region"] }}-{{instance["zone"]}}
+      machineType: {{ properties["machineType"] }}
+      disks:
+      - deviceName: boot
+        boot: true
+        autoDelete: true
+        diskType: {{ PROJECT_URL_BASE }}/zones/{{ properties["region"] }}-{{instance["zone"]}}/diskTypes/pd-ssd
+        initializeParams:
+          diskName: dsk-{{ instance["baseName"] }}-boot
+          sourceImage: {{ COMPUTE_URL_BASE }}/projects/{{ properties["sourceImageRelUrl"] }}
+      - deviceName: data
+        source: dsk-{{ instance["baseName"] }}-data
+        autoDelete: false 
+        boot: false
+      networkInterfaces:
+      - network: {{ PROJECT_URL_BASE }}/global/networks/{{ properties["network"] }}
+        subnetwork: {{ PROJECT_URL_BASE }}/regions/{{ properties["region"] }}/subnetworks/{{ properties["subnetwork"] }}
+        networkIP: {{ instance["ip"] }}
+      metadata:
+        items:
+          {% for meta in properties["instanceMetadata"] %}
+          - key: {{ meta["key"] }}
+            value: {{ meta["value"] }}
+          {% endfor %}
+          - key: template-name
+            value: {{ instance["baseName"] }}
+        dependsOn:
+          - dsk-{{ instance["baseName"] }}-data
+
+{%endfor%}

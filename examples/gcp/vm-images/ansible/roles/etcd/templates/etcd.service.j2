@@ -1,0 +1,22 @@
+[Unit]
+Description=Etcd Service
+
+[Service]
+PermissionsStartOnly=true
+
+Environment=ETCD_NAME=__NAME__
+Environment=ETCD_INITIAL_CLUSTER_TOKEN=etcd-cluster-1
+Environment=ETCD_LISTEN_PEER_URLS=http://__MY_IP__:2380
+Environment=ETCD_LISTEN_CLIENT_URLS=http://__MY_IP__:2379
+Environment=ETCD_ADVERTISE_CLIENT_URLS=http://__MY_IP__:2379
+Environment=ETCD_ADVERTISE_PEER_URLS=http://__MY_IP__:2380
+Environment=ETCD_DATA_DIR=/var/lib/etcd
+Environment=ETCD_INITIAL_CLUSTER_STATE=new
+Environment=ETCD_INITIAL_CLUSTER=__ETCD_INITIAL_CLUSTER__
+
+ExecStart={{ etcd_install_path }}/{{ etcd_etcd_binary_file_name }} --name "$ETCD_NAME" --initial-advertise-peer-urls "$ETCD_ADVERTISE_PEER_URLS" --listen-peer-urls "$ETCD_LISTEN_PEER_URLS" --listen-client-urls "$ETCD_LISTEN_CLIENT_URLS" --advertise-client-urls "$ETCD_ADVERTISE_CLIENT_URLS" --initial-cluster-token "$ETCD_INITIAL_CLUSTER_TOKEN" --initial-cluster "$ETCD_INITIAL_CLUSTER" --initial-cluster-state "$ETCD_INITIAL_CLUSTER_STATE"
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target

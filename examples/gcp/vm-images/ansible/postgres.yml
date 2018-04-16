@@ -1,0 +1,12 @@
+---
+- hosts: all
+  become: true
+  #become_user: root
+  #become_method: sudo
+  roles:
+    - { role: postgresql }
+    - { role: pgbouncer }
+    - { role: backup }
+    - { role: patroni }
+    - { role: post-install }
+  tags: [postgresql, patroni, post-install]

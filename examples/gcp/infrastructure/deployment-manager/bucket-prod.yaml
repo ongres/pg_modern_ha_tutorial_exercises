@@ -1,0 +1,13 @@
+imports:
+
+  - name: bucket.jinja
+    path: templates/bucket.jinja
+
+resources:
+
+  - name: prod-bucket
+    type: bucket.jinja
+    properties:
+      environment: prod
+      name: customer
+      region: europe-west1

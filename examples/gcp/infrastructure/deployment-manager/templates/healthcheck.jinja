@@ -1,0 +1,12 @@
+resources:
+
+  - name: {{ properties["environment"] }}-pg-health-check
+    type: compute.v1.healthCheck
+    properties:
+      type: HTTP
+      loadBalancingScheme: INTERNAL
+      httpHealthCheck:
+          port: 8008
+          requestPath: /master
+          checkIntervalSec: 5
+          healthyThreshold: 5 # default 2

@@ -1,0 +1,17 @@
+postinstall_key_folder: "/root/.keys/"
+
+postinstall_environments:
+  - tmp
+  - prep
+  - prod
+
+postgresql_disk_mountdir: "/var/postgresql"
+gcloud_disk_device: "/dev/sdb"
+
+patroni_stats_temp: "/var/run/postgresql/9.6-main.pg_stat_tmp"
+pgbouncer_pid_dir: "/var/run/pgbouncer/"
+
+
+pgbouncer_authfile: "/etc/pgbouncer/userlist.txt"
+#/usr/share/pgbouncer/mkauth.py
+

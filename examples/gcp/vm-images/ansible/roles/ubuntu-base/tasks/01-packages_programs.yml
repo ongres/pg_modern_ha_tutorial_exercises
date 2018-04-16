@@ -1,0 +1,34 @@
+---
+
+- name: full package upgrade
+  apt:
+    update_cache: yes
+    upgrade: full 
+  force_apt_get: true
+  become: true
+  register: upgrade
+
+- name: install basic common packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - git
+    - python-pip
+    - unzip
+    - xfsprogs
+    - python-lxml
+    - screen
+    - jq
+  become: true
+  when: upgrade
+
+- name: generate locales
+  locale_gen:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - en_US.UTF-8
+    - de_DE.UTF-8
+    - es_ES.UTF-8
+  become: true

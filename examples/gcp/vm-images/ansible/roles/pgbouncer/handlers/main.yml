@@ -1,0 +1,31 @@
+---
+
+- name: start pgbouncer
+  service:
+    name: pgbouncer
+    state: started
+  tags: pgbouncer
+
+- name: stop pgbouncer
+  service:
+    name: pgbouncer
+    state: stopped
+  tags: pgbouncer
+
+- name: restart pgbouncer
+  service:
+    name: pgbouncer
+    state: restarted
+  tags: pgbouncer
+
+- name: reload pgbouncer
+  service:
+    name: pgbouncer
+    state: reloaded
+  tags: pgbouncer
+
+- name: start systemd pgbouncer
+  systemd:
+    name: pgbouncer.service
+    state: started
+  tags: pgbouncer

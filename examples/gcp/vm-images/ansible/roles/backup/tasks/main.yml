@@ -1,0 +1,179 @@
+- include_vars: backup.yml
+
+- name: Installing wal-e main dependencies
+  become: yes
+  apt:
+    name: "{{item}}"
+    state: present
+  with_items:
+    - python3-pip
+    - python3-dev
+    - lzop
+    - pv
+    - daemontools
+    - python-pyasn1
+    - python-pyasn1-modules
+    - postgresql-server-dev-9.6
+  tags: backup
+
+- name: Upgrading python3 pip
+  command: python3 -m pip install --upgrade {{item}}
+  with_items:
+    - pip
+    - gcloud
+  tags: backup
+  become: true
+
+- name: Installing google-cloud-storage in pip
+  pip:
+    name: google-cloud-storage
+  tags: backup
+
+- name: Installing fix against google oauth lib and cloud storage
+  command: "python3 -m pip install --upgrade {{item}}"
+  become: true
+  with_items:
+    - google-auth-oauthlib
+    - pyasn1
+    - boto          # TypeError: join() argument must be str or bytes, not 'NoneType'
+    - oauth2client
+#    - gcloud
+  tags: backup
+
+- name: Installing google-c-storage in pip3
+  command: "python3 -m pip install google-cloud-storage"
+  tags: backup
+  ignore_errors: yes
+
+- name: Installing wal-e using pip3
+  command: python3 -m pip install wal-e[google]
+  become: true
+  tags: backup
+
+#- name: clone wal-e tool
+#  sudo: true
+#  git:
+#    repo: "{{pg_wale_repo}}"
+#    dest: /tmp/wal-e
+#    version: "{{pg_wale_version}}"
+#    force: yes
+#    accept_hostkey: yes
+#  tags: backup
+
+#- name: install wal-e
+#  sudo: true
+#  command: python3 setup.py install
+#  args:
+#    chdir: /tmp/wal-e
+#  tags: backup
+
+#- name: remove the install files
+#  sudo: true
+#  file:
+#    state: absent
+#    path: /tmp/wal-e
+#  tags: backup
+
+
+- name: create env directory
+  become: true
+  file:
+    state: directory
+    owner: "{{pg_wale_user}}"
+    group: "{{pg_wale_user}}"
+    path: "{{pg_wale_env_folder}}"
+  tags: backup
+
+# Yes, this files only contains the location of the key, which
+# happens to be the key.json. This is how wal-e works tho, and 
+# lacks a ton of documentation regarding this.
+- name: create env file for wal-e file key location
+  copy:
+    content: "{{pg_wale_env_folder}}/key.json"
+    dest: "{{pg_wale_env_folder}}/GOOGLE_APPLICATION_CREDENTIALS"
+    owner: "{{pg_wale_user}}"
+    group: "{{pg_wale_user}}"
+  become: true
+  tags: backup
+
+# This key only works on a temp environment and this task being kept
+# For avoiding wal-e to fail if no post-install executed.
+# This file will be overwritten in the post-install script OR the deployment
+# manager execution when spinning up instances.
+- name: Create env file for the wal-e key
+  copy: 
+    src: key.json 
+    dest: "{{pg_wale_env_folder}}/key.json"
+    owner: "{{pg_wale_user}}"
+    group: "{{pg_wale_user}}"
+    decrypt: yes  # the sauce is here for transparently decrypting the file to the host (> 2.4 ansible)
+  become: true
+  tags: backup
+
+- name: Create env file for the wal-e bucket
+  copy: 
+    content: "{{pg_wale_bucket}}" 
+    dest: "{{pg_wale_env_folder}}/WALE_GS_PREFIX"
+    owner: "{{pg_wale_user}}"
+    group: "{{pg_wale_user}}"
+  become: true
+  tags: backup
+
+
+#- name: create env file for GCLOUD_SECRET_ACCESS_KEY
+#  become: true
+#  template:
+#    src: GCLOUD_SECRET_ACCESS_KEY.j2
+#    dest: "{{pg_wale_env_folder}}/GCLOUD_SECRET_ACCESS_KEY"
+#    owner: "{{pg_wale_user}}"
+#    group: "{{pg_wale_user}}"
+#    mode: 640
+#  tags: backup
+
+# Useless when using Patroni:
+#- name: populate an example recovery file
+#  become: true
+#  template:
+#    src: recovery.example.j2
+#    dest: "{{pg_wale_pg_directory}}/recovery.example"
+#    owner: "{{pg_wale_user}}"
+#    group: "{{pg_wale_user}}"
+#    mode: 755
+#  tags: backup
+
+
+- name: Setting up Postgres connection env vars for wal-e 
+  block:
+    - copy:
+        content: "{{postgresql_port}}"
+        dest: "{{pg_wale_env_folder}}/PGPORT"
+        owner: "{{pg_wale_user}}"
+        group: "{{pg_wale_user}}"
+    - copy:
+        content: "__INSTANCE_IP__"
+        dest: "{{pg_wale_env_folder}}/PGHOST"
+        owner: "{{pg_wale_user}}"
+        group: "{{pg_wale_user}}"
+    - copy:
+        content: "{{postgresql_postgres_user}}"
+        dest: "{{pg_wale_env_folder}}/PGUSER"
+        owner: "{{pg_wale_user}}"
+        group: "{{pg_wale_user}}"
+    - copy:
+        content: "{{postgresql_postgres_pass}}"
+        dest: "{{pg_wale_env_folder}}/PGPASSWORD"
+        owner: "{{pg_wale_user}}"
+        group: "{{pg_wale_user}}"
+  become: true
+  tags: backup
+
+
+- name: Setup full backup
+  become: true
+  cron:
+    name: "Full backup with WAL-e"
+    minute: "0"
+    hour: "1"
+    weekday: "6"
+    job: "envdir /etc/wal-e.d/env/ wal-e backup-push {{postgresql_custom_datadir}}"
+    user: postgres

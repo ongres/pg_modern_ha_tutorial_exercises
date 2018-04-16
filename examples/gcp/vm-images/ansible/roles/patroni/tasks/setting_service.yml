@@ -1,0 +1,28 @@
+---
+# This shuold be already disabled form Postgres playbook,
+# we double check here.
+- name: disable the default service
+  service:
+    name: "{{ patroni_pg_default_service }}"
+    state: stopped
+    enabled: no
+  tags: patroni
+
+
+- name: Enable and keep Patroni stopped during image setup
+  service:
+    name: "patroni"
+    enabled: yes
+    state: stopped
+  notify: stop patroni
+  tags: patroni
+
+
+#- name: Enable and keep Patroni stopped during image setup
+#  systemd:
+#    name: "patroni.service"
+#    enabled: yes
+#    state: stopped
+#    daemon_reload: yes
+#  notify: stop patroni2
+#  tags: patroni

@@ -1,0 +1,58 @@
+---
+
+- name: Trust key for postgresql repo
+  apt_key: data="{{ lookup('file', 'postgresql.key') }}" state=present
+  become: yes
+  tags: postgresql
+
+- name: Add official postgresql repo
+  apt_repository:
+    repo: 'deb {{ apt_postgresql_repository_url }} {{ ansible_lsb.codename }}-pgdg main'
+    filename: pgdg
+  become: yes 
+  tags: postgresql
+
+- name: Updating apt cache
+  apt:
+    update_cache: yes
+  become: yes 
+  tags: postgresql
+
+# This should be placed in the Ubuntu base (we added here to ensure they are present even
+# if the ubuntu base is not generated).
+- name: Install basic common packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - git
+    - python-pip
+    - unzip
+    - xfsprogs
+    - python-lxml
+    - screen
+    - jq
+  become: true
+  tags: postgresql
+
+- name: Install postgresql database and Dependencies
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+      - postgresql-{{ postgresql_version }}
+      - postgresql-contrib-{{ postgresql_version }}
+      - postgresql-client-{{ postgresql_version }}
+  become: yes 
+  tags: postgresql
+
+- name: Install contribs
+  include: ../extensions/contrib.yml
+  tags: postgresql
+
+- name: Install psycopg2 (requirement for ansible postgresql related modules)
+  pip: 
+    name: psycopg2 
+    state: latest
+  become: yes 
+  tags: postgresql

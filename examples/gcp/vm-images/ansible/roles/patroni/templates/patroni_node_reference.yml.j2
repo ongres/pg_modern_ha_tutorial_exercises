@@ -1,0 +1,103 @@
+# This configuration file is deprecated and is only preserved
+# for reference of a full configuration of patroni.
+
+scope: {{ patroni_scope }}
+#namespace: /service/
+name: {{ patroni_node_name }}
+dcs_api: "consul://{{ consul_ilb_ip }}:8500"
+
+restapi:
+  listen: 127.0.0.1:8008
+  connect_address: 127.0.0.1:8008
+#  certfile: /etc/ssl/certs/ssl-cert-snakeoil.pem
+#  keyfile: /etc/ssl/private/ssl-cert-snakeoil.key
+#  authentication:
+#    username: username
+#    password: password
+
+consul:
+  host: {% if vagrant_host is defined %}'http://127.0.0.1:8500'{% else %}"http://{{ consul_ilb_ip }}:8500"{% endif %} 
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+  users:
+    {{postgresql_admin_user}}:
+      password: {{postgresql_admin_pass}}
+      options:
+        - superuser
+    {{pgbouncer_username}}:
+      password: {{pgbouncer_password}}
+      options:
+        - superuser
+#    {{service_username}}:
+#      password: {{service_password}}
+#    {{accountservice_username}}:
+#      password: {{accountservice_password}}
+    postgresql:
+      use_pg_rewind: true
+#      use_slots: true
+      parameters:
+#        wal_level: hot_standby
+#        hot_standby: "on"
+#        wal_keep_segments: 8
+#        max_wal_senders: 5
+#        max_replication_slots: 5
+#        wal_log_hints: "on"
+#        archive_mode: "on"
+#        archive_timeout: 1800s
+#        archive_command: mkdir -p ../wal_archive && test ! -f ../wal_archive/%f && cp %p ../wal_archive/%f
+#      recovery_conf:
+#        restore_command: cp ../wal_archive/%f %p
+  initdb:
+    - data-checksums
+    - encoding: UTF8
+#    - locale: UTF8
+  pg_hba:
+{% for hba_entry in patroni_hba_rules %}
+    - {{ hba_entry }}
+{% endfor %}
+
+
+
+  # Additional script to be launched after initial cluster creation (will be passed the connection URL as parameter)
+# post_init: /usr/local/bin/setup_cluster.sh
+
+  # Some additional users users which needs to be created after initializing new cluster
+  users:
+    {{ pgbouncer_username }}:
+      password: {{ pgbouncer_password }}
+      options:
+        - superuser
+    {{ postgresql_replication_user }}:
+      password: {{ postgresql_replication_pass }}
+      options:
+        - replication
+
+postgresql:
+  listen: 127.0.0.1:5432
+  connect_address: 127.0.0.1:5432
+  data_dir: {{ postgresql_data_directory }} # data/postgresql0
+#  bin_dir:
+#  config_dir:
+  pgpass: /tmp/pgpass0
+  authentication:
+    {{ postgresql_postgres_user }}:
+      username: {{ postgresql_postgres_user }}
+      password: {{ postgresql_postgres_pass }}
+  parameters:
+    unix_socket_directories: '.'
+
+#watchdog:
+#  mode: automatic # Allowed values: off, automatic, required
+#  device: /dev/watchdog
+#  safety_margin: 5
+
+tags:
+  nofailover: false
+  noloadbalance: false
+  clonefrom: false
+  nosync: false

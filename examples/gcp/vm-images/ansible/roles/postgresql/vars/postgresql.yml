@@ -1,0 +1,99 @@
+---
+
+# GCP
+
+gcloud_disk_device: "/dev/sdb"
+
+postgresql_disk_mountdir: "/var/postgresql"
+postgresql_custom_datadir: "{{postgresql_disk_mountdir}}/data"
+
+postgresql_instance_name: 'postgres1'
+# Postgres configuration
+postgresql_conf_file: /etc/postgresql/{{ postgresql_version }}/main/postgresql.conf
+postgresql_version: '9.6'
+postgresql_port: 5433
+postgresql_max_connections: 80
+postgresql_superuser_reserved_connections: 5
+postgresql_shared_buffers: '12GB'
+postgresql_max_wal_size: '50GB'
+postgresql_min_wal_size: '1GB'
+postgresql_checkpoint_completion_target: 0.8
+postgresql_archive_mode: 'on'
+postgresql_archive_command: '/bin/true'
+postgresql_maintenance_work_mem: '512MB'
+postgresql_work_mem: '4MB'
+postgresql_effective_io_concurrency: 1
+postgresql_data_directory: "/var/lib/postgresql/{{ postgresql_version }}/main"
+postgresql_hba_file: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+postgresql_ident_file: "/etc/postgresql/{{ postgresql_version }}/main/pg_ident.conf"
+postgresql_pid_dir: "/var/run/postgresql"
+postgresql_bin_path: "/usr/lib/postgresql/{{ postgresql_version }}/bin"
+postgresql_external_pid_file: "{{ postgresql_pid_dir }}/{{ postgresql_version }}-main.pid"
+postgresql_effective_cache_size: 3GB 
+postgresql_max_wal_senders: 8
+postgresql_max_replication_slots: 8
+postgresql_track_commit_timestamp: on
+postgresql_default_statistics_target: 1000
+postgresql_bgwriter_delay: '20ms'
+postgresql_temp_buffers: '128MB'
+postgresql_vacuum_cost_limit: 2000
+postgresql_max_locks_per_transaction: 256
+postgresql_encoding: 'UTF8'
+postgresql_locale: 'en_US.UTF-8'
+postgresql_log_rotation_size: '100MB'
+postgresql_log_min_duration_statement: 5000
+
+postgresql_replication_user: 'replication'
+postgresql_replication_pass: 'a' #!vault |
+
+postgresql_postgres_user: 'postgres'
+postgresql_postgres_pass: 'a' #!vault |
+
+
+postgresql_hba_rules:
+  - "host    all             all             172.0.0.0/8                 md5"
+  - "host    all             all             127.0.0.1/32               trust"
+  - "host    all             all             ::1/128                 trust"
+  - "host    replication     {{postgresql_replication_user}}             172.0.0.0/8                 md5"
+
+# Is not the same as we kept the postgres peer in the pg_hba.conf BY DEFAULT in the
+# postgres role. For patroni this is different
+patroni_hba_rules:
+    - "local   all             postgres                                  peer"
+    - "local   all             all                                       trust"
+    - "host    all             all             10.0.0.0/8                md5"
+    - "host    replication     {{postgresql_replication_user}}         10.0.0.0/8                md5"
+
+postgresql_wal_bucket_name: pgwal
+postgresql_wal_local_path: /pg_archive
+
+
+# Global Patroni vars
+## Control if using patroni or plain deploy
+patroni_enabled: "false"
+##
+patroni_scope: "customer"
+#patroni_node_name: "{{ansible_hostname}}"
+#patroni_repository: "https://github.com/zalando/patroni.git"
+patroni_location: "/opt/patroni"
+patroni_configuration_dir: "/etc/patroni"
+
+
+## Configuring Patroni-Postgres
+#patroni_pg_default_service: "postgresql-{{ postgresql_version }}"
+patroni_pg_default_service: "postgresql" # we expect to have only 1 instance per machine 
+patroni_pg_path: "/usr/lib/postgresql/{{ postgresql_version }}/bin"
+patroni_pg_max_connections: 500
+patroni_postgres_port: "{{ postgresql_port }}"
+patroni_archive_command: "mkdir -p {{ postgresql_wal_local_path }} && test ! -f {{ postgresql_wal_local_path }}/%f && cp %p {{ postgresql_wal_local_path }}/%f"
+patroni_node_configuration: "{{ patroni_configuration_dir }}/postgres.yml"
+
+# We want to keep pgdata and pgxlog separated for allowing better performance
+# at storage level.
+devices:
+  pgdata:
+    blk: '/dev/sdb'
+    mount_opts: 'noatime,noexec,nodiratime,noquota'
+  pgxlog:
+    blk: '/dev/sdc'
+    mount_opts: 'noatime,noexec,nodiratime,noquota'

@@ -1,0 +1,18 @@
+imports:
+
+  - name: pg-load-balancer.jinja
+    path: templates/pg-load-balancer.jinja
+
+
+
+resources:
+  - name: prep-pg-load-balancer
+    type: pg-load-balancer.jinja
+    properties:
+      environment: prep
+      etcdHost: 172.16.13.111
+      loadBalancerIp: 172.16.13.121
+      instances:
+        - { ip: 172.16.13.101, zone: b }
+        - { ip: 172.16.13.102, zone: c }
+        - { ip: 172.16.13.103, zone: d }

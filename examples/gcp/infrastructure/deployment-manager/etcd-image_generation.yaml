@@ -1,0 +1,16 @@
+imports:
+
+  - name: vm-project_image_generation.jinja
+    path: templates/vm-project_image_generation.jinja
+  - name: vm-image_generation.jinja
+    path: templates/vm-image_generation.jinja
+  - name: vm-public_ssh.jinja
+    path: templates/vm-public_ssh.jinja
+
+
+resources:
+
+  - name: vm-etcd-image-generation
+    type: vm-project_image_generation.jinja
+    properties:
+      name: vm-etcd-image-generation

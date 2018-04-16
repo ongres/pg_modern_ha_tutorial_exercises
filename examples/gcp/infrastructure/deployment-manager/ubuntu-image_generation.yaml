@@ -1,0 +1,15 @@
+imports:
+
+  - name: vm-image_generation.jinja
+    path: templates/vm-image_generation.jinja
+  - name: vm-public_ssh.jinja
+    path: templates/vm-public_ssh.jinja
+
+
+resources:
+
+  - name: vm-image-generation
+    type: vm-image_generation.jinja
+    properties:
+      name: vm-image-generation
+      sourceImageRelUrl: ubuntu-os-cloud/global/images/ubuntu-1604-xenial-v20171208

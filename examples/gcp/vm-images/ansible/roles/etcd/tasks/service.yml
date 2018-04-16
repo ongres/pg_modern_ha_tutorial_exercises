@@ -1,0 +1,35 @@
+---
+- include_vars: systemd.yml
+
+- name: Ensure Etcd data dir
+  sudo: true
+  file:
+    name: '{{ etcd_cluster_data_dir }}'
+    state: directory
+    owner: '{{ etcd_install_owner }}'
+    group: '{{ etcd_install_group }}'
+    mode: '0775'
+
+- name: Ensure service file
+  sudo: true
+  template:
+    src: '{{ etcd_service_file_template }}'
+    dest: '{{ etcd_service_file_path }}/{{ etcd_service_file_name }}'
+    mode: '{{ etcd_service_file_mode }}'
+  notify: restart etcd
+
+- name: Ensure service is running and configured to start on boot
+  sudo: true
+  service:
+    name: '{{ etcd_service_name }}'
+    state: '{{ etcd_service_state }}'
+    enabled: '{{ etcd_service_enabled }}'
+
+- name: Script to fix service file template with instance data
+  sudo: true
+  copy:
+    src: 'files/fix_etcd_service.sh'
+    dest: '{{ etcd_install_path }}/fix_etcd_service.sh'
+    owner: '{{ etcd_install_owner }}'
+    group: '{{ etcd_install_group }}'
+    mode: '0775'

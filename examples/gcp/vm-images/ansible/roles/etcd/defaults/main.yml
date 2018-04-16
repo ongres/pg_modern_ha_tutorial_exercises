@@ -1,0 +1,19 @@
+---
+etcd_version: v2.0.10
+etcd_url: https://github.com/coreos/etcd/releases/download/
+etcd_package_name: etcd-{{ etcd_version }}-linux-amd64
+etcd_package_file: '{{ etcd_package_name }}.tar.gz'
+etcd_etcd_binary_file_name: etcd
+etcd_etcdctl_binary_file_name: etcdctl
+etcd_download_path: /tmp
+etcd_install: false
+etcd_install_path: /usr/local/bin
+etcd_install_owner: root
+etcd_install_group: root
+etcd_install_mode: '0755'
+etcd_service: false
+etcd_service_state: stopped
+etcd_service_enabled: true
+etcd_cluster_name: default
+etcd_cluster_data_dir: /var/lib/etcd
+etcd_cluster_group_name: null

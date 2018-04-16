@@ -1,0 +1,25 @@
+---
+- name: Stop Postgres for setting up data
+  service:
+    name: postgresql
+    state: stopped
+  notify: stop postgresql
+  tags: postgresql
+
+- name: Removing default pgdata directory
+  file:
+    path: '{{ postgresql_data_directory }}'
+    state: absent
+  become: yes 
+  tags: postgresql
+
+# this directory isn't the data directory, is only
+# the parent dir on top of which we mount the data directory
+- name: Creating the data directory
+  file:
+    path: '{{postgresql_disk_mountdir}}'
+    owner: postgres
+    group: postgres
+    state: directory
+  become: yes
+  tags: postgresql

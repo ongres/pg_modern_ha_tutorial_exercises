@@ -1,0 +1,13 @@
+[Unit]
+Description=Patroni Service
+
+[Service]
+Environment="PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:{{ patroni_pg_path }}"
+User=postgres
+Group=postgres
+ExecStart=/usr/local/bin/patroni {{ patroni_node_configuration }}
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

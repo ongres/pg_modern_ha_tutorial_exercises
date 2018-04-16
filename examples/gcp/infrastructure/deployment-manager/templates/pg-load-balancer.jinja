@@ -1,0 +1,33 @@
+resources:
+
+  - name: {{ properties["environment"] }}-pg-health-check
+    type: compute.v1.healthCheck
+    properties:
+      type: HTTP
+      loadBalancingScheme: INTERNAL
+      httpHealthCheck:
+          port: 8008
+          requestPath: /master
+
+  - name: {{ properties["environment"] }}-pg-backend
+    type: compute.v1.regionBackendService
+    properties:
+      region: europe-west1
+      loadBalancingScheme: INTERNAL
+      backends:
+        {% for instance in properties["instances"] %}
+        - group: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/europe-west1-{{ instance["zone"] }}/instanceGroups/group-{{ properties["environment"] }}-pg-{{ instance["zone"] }}
+        {% endfor %}
+      healthChecks:
+        - $(ref.{{ properties["environment"] }}-pg-health-check.selfLink)
+
+  - name: lb-{{ properties["environment"] }}-pg-load-balancer
+    type: compute.v1.forwardingRule
+    properties:
+      region: europe-west1
+      loadBalancingScheme: INTERNAL 
+      IPAddress: {{properties["loadBalancerIp"]}} 
+      backendService: $(ref.{{ properties["environment"] }}-pg-backend.selfLink)
+      ports: [5432]
+      network: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/global/networks/vpc-{{ properties["environment"] }}
+      subnetwork: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/regions/europe-west1/subnetworks/sub-{{properties["environment"]}}-europe-west1-pg

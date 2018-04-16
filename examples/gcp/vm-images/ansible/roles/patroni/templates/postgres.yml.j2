@@ -1,0 +1,139 @@
+dcs_api: 'etcd://__ETCD_HOST__:2379'
+#namespace: /service/
+scope: {{ patroni_scope }}
+name: __INSTANCE_NAME__
+
+restapi:
+  listen: __INSTANCE_IP__:8008    # rest api should be accessible remotely or locally?
+  connect_address: __INSTANCE_IP__:8008
+
+etcd:
+  host: __ETCD_HOST__
+  port: 2379
+
+bootstrap:
+  dcs:
+    ttl: {{patroni_dcs_ttl}}
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: true
+      parameters:
+        data_directory: '{{postgresql_custom_datadir}}'
+        port: {{patroni_postgres_port}}
+        max_connections: {{postgresql_max_connections}}   
+        superuser_reserved_connections: {{postgresql_superuser_reserved_connections}}
+        ssl: '{{postgresql_ssl}}'
+        shared_buffers: '{{postgresql_shared_buffers}}'   
+        huge_pages: {{postgresql_huge_pages}}   
+        temp_buffers: '{{postgresql_temp_buffers}}'   
+        work_mem: '{{postgresql_work_mem}}'    
+        maintenance_work_mem: '{{postgresql_maintenance_work_mem}}'  
+        dynamic_shared_memory_type: posix 
+        shared_preload_libraries: '{{postgresql_shared_preload_libraries}}'
+        vacuum_cost_limit: {{postgresql_vacuum_cost_limit}}  
+        bgwriter_delay: '{{postgresql_bgwriter_delay}}'   
+        bgwriter_lru_maxpages: {{postgresql_bgwriter_lru_maxpages}}
+        effective_io_concurrency: {{postgresql_effective_io_concurrency}} 
+        wal_level: '{{postgresql_wal_level}}'   
+        checkpoint_timeout: '{{postgresql_checkpoint_timeout}}'  
+        max_wal_size: {{postgresql_max_wal_size}}
+        min_wal_size: {{postgresql_min_wal_size}}
+        checkpoint_completion_target: {{postgresql_checkpoint_completion_target}} # checkpoint target duration, 0.0 - 1.0
+        archive_mode: {{postgresql_archive_mode}}  
+        archive_command: envdir {{pg_wale_env_folder}} {{pg_wale_bin}} wal-push "%p"
+        archive_timeout: {{postgresql_archive_timeout}}
+        max_wal_senders: {{postgresql_max_wal_senders}}  
+        max_replication_slots: {{postgresql_max_replication_slots}} 
+        track_commit_timestamp: '{{postgresql_track_commit_timestamp}}'
+        hot_standby: 'on'   
+        hot_standby_feedback: '{{postgresql_hot_standby_feedback}}'  
+        random_page_cost: {{postgresql_random_page_cost}}   
+        effective_cache_size: '{{postgresql_effective_cache_size}}'
+        default_statistics_target: {{postgresql_default_statistics_target}} 
+        logging_collector: 'on'   
+        log_rotation_size: '{{postgresql_log_rotation_size}}'  
+        log_min_duration_statement: {{postgresql_log_min_duration_statement}} # -1 is disabled, 0 logs all statements
+        log_checkpoints: '{{postgresql_log_checkpoints}}'
+        log_connections: '{{postgresql_log_connections}}'
+        log_disconnections: '{{postgresql_log_disconnections}}'
+        log_line_prefix: '{{postgresql_log_line_prefix}}'
+        log_timezone: 'UTC'
+        #stats_temp_directory: '{{patroni_stats_temp}}'
+        datestyle: 'iso, mdy'
+        timezone: 'UTC'
+        lc_messages: '{{postgresql_locale}}'   
+        lc_monetary: '{{postgresql_locale}}'   
+        lc_numeric: '{{postgresql_locale}}'   
+        lc_time: '{{postgresql_locale}}'    
+        default_text_search_config: 'pg_catalog.english'
+        max_locks_per_transaction: {{postgresql_max_locks_per_transaction}}  # min 10
+        #hba_file: /etc/postgresql/9.6/main/pg_hba.conf
+        #ident_file: /etc/postgresql/9.6/main/pg_ident.conf
+#      recovery_conf:
+#        restore_command: envdir {{pg_wale_env_folder}} {{pg_wale_bin}} wal-fetch "%f" "%p"
+
+  initdb:
+    - encoding: {{postgresql_encoding}}
+    - data-checksums
+
+  pg_hba:
+{% for hba_entry in patroni_hba_rules %}
+    - {{ hba_entry }}
+{% endfor %}
+
+  users:
+    {{postgresql_admin_user}}:
+      password: {{postgresql_admin_pass}}
+      options:
+        - superuser
+    {{pgbouncer_username}}:
+      password: {{pgbouncer_password}}
+      options:
+        - superuser
+    {{postgresql_replication_user}}:
+      password: {{postgresql_replication_pass}}
+      options:
+        - replication
+
+postgresql:
+  listen: __INSTANCE_IP__:{{patroni_postgres_port}}
+  connect_address: __INSTANCE_IP__:{{patroni_postgres_port}}
+  data_dir: {{ postgresql_custom_datadir }}
+  pgpass: /tmp/pgpass0
+  authentication:
+    superuser:
+      username: {{ postgresql_admin_user }}
+      password: {{ postgresql_admin_pass }}
+    replication:
+      username: {{ postgresql_replication_user }}
+      password: {{ postgresql_replication_pass }}
+  parameters:
+    unix_socket_directories: '.'
+  custom_conf: {{ postgresql_conf_file }}
+  create_replica_method:
+    - basebackup
+#    - wal_e
+#  wal_e:
+#    command:
+
+# TODO add wal_e 
+# create_replica_method:
+#   - wal_e
+#   - pg_basebackup
+# wal_e:
+#   command: patroni_wale_restore
+#   no_master: 1
+#   envdir: WALE_ENV_DIR
+
+watchdog:
+  mode: automatic
+  device: /dev/watchdog
+  safety_margin: 5
+
+tags:
+  nofailover: false
+  noloadbalance: false
+  clonefrom: false
+  nosync: false

@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# This script is generated form an Ansible template.
+# See ansible/roles/post-install/templates
+
+DEVICE={{gcloud_disk_device}}
+MOUNT_POINT={{postgresql_disk_mountdir}}
+# /var/run directories are in tmpfs, so they are wipe out on image
+# start
+STAT_TEMP={{patroni_stats_temp}} 
+PGBOUNCER_PIDDIR={{pgbouncer_pid_dir}} #FIXED
+
+KEY_FOLDER={{postinstall_key_folder}}
+WAL_E_ENVDIR={{pg_wale_env_folder}}
+WAL_E_USER={{pg_wale_user}}
+
+
+mkfs.xfs $DEVICE
+echo "$DEVICE	$MOUNT_POINT	xfs		rw,noatime,nobarrier	0	1" >> /etc/fstab
+mount $DEVICE $MOUNT_POINT
+
+
+function instance_metadata() {
+	curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/$1
+}
+
+function instance_metadata_kv() {
+	instance_metadata attributes/$1
+}
+
+# A sordid way to check if the master has been already elected
+# each <interval> seconds during a <timeout> frame.
+# wait_leader <timeout> <interval>
+function wait_leader { 
+	sleep $2; 
+	timeout=$1
+	[[ $timeout -lt 1 ]] && return 1 ; 
+	[[ $(pctl list | grep  -c ".*Leader.*running*") -eq 1 ]] && return 0 ; 
+	wait_leader $((timeout-1));  
+}
+
+
+# Getting vars
+name=`instance_metadata name`
+my_ip=`instance_metadata network-interfaces/0/ip`
+etcd_host=`instance_metadata_kv etcd-host`
+environment=`instance_metadata_kv environment`
+
+# Doing replaces
+sed -i "s+__INSTANCE_NAME__+$name+" /etc/patroni/postgres.yml
+sed -i "s+__INSTANCE_IP__+$my_ip+" /etc/patroni/postgres.yml
+sed -i "s+__ETCD_HOST__+$etcd_host+" /etc/patroni/postgres.yml
+sed -i "s+__INSTANCE_IP__+$my_ip+" {{pg_wale_env_folder}}/PGHOST
+#sed -i "s+__INSTANCE_IP__+$my_ip+" /etc/pgbouncer/pgbouncer.ini
+
+#Placing and removing keys
+## WAL-e
+[[ -e $KEY_FOLDER/${environment}_key.json ]] && cp $KEY_FOLDER/${environment}_key.json $WAL_E_ENVDIR/key.json
+rm -rf $KEY_FOLDER
+
+
+# Permissions reassurance 
+mkdir $STAT_TEMP
+mkdir $PGBOUNCER_PIDDIR
+chown -R postgres: $STAT_TEMP
+chown -R postgres: $MOUNT_POINT
+chown -R postgres: $PGBOUNCER_PIDDIR
+chown -R ${WAL_E_USER}: $WAL_E_ENVDIR
+mkdir 
+sleep 2
+
+
+# Starting all the services
+systemctl daemon-reload
+
+systemctl stop patroni.service
+sleep 2
+systemctl start patroni.service
+
+# Wait until master is elected with a 60 seconds timout
+wait_leader 60 1
+
+set +o history
+# patroni returns DSN of the master without single quotes, which makes
+# mkauth fails miserably, the below fixes this with le ol' perl style.
+MASTER_DSN=$(pctl dsn | perl -pe "s/([^=]*)(,|\s)/'\1' /g")
+{{pgbouncer_share_dir}}/mkauth.py {{pgbouncer_authfile}} "${MASTER_DSN} user='{{postgresql_admin_user}}' password='{{postgresql_admin_pass}}'"
+chown postgres: {{pgbouncer_authfile}}
+
+# Creates the auth_query on template:
+psql "${MASTER_DSN} user='{{postgresql_admin_user}}' password='{{postgresql_admin_pass}}' dbname='template1'" < /usr/share/pgbouncer/pgbouncer_auth_query.sql 
+
+systemctl restart pgbouncer.service
+

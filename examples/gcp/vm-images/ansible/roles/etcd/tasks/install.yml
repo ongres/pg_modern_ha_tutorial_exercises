@@ -1,0 +1,26 @@
+---
+- name: Download Etcd release file
+  get_url:
+    url: '{{ etcd_url }}/{{ etcd_version }}/{{ etcd_package_file }}'
+    dest: '{{ etcd_download_path }}'
+
+- name: Unarchive Etcd binaries
+  unarchive:
+    src: '{{ etcd_download_path }}/{{ etcd_package_file }}'
+    dest: '{{ etcd_download_path }}'
+    copy: no
+    owner: root
+    group: root
+    mode: '0777'
+
+- name: Copy unarchived binaries
+  copy:
+    remote_src: yes
+    src: '{{ etcd_download_path }}/{{ etcd_package_name }}/{{ item }}'
+    dest: '{{ etcd_install_path }}'
+    mode: '{{ etcd_install_mode }}'
+    owner: '{{ etcd_install_owner }}'
+    group: '{{ etcd_install_group }}'
+  with_items:
+  - '{{ etcd_etcd_binary_file_name }}'
+  - '{{ etcd_etcdctl_binary_file_name }}'

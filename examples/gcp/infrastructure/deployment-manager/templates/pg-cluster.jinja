@@ -1,0 +1,48 @@
+resources:
+
+  - name: {{ properties["environment"] }}-pg-cluster
+    type: private-template-with-disk.jinja
+    properties:
+      machineType: n1-standard-1 # n1-highmem-8
+      sourceImageRelUrl: {{ env["project"] }}/global/images/img-pg-base-img-ubuntu-base
+      network: vpc-{{ properties["environment"] }}
+      subnetwork: sub-{{ properties["environment"] }}-europe-west1-pg
+      region: europe-west1
+      dataDiskGb: 20  # 1000
+      environment: {{ properties["environment"] }}
+      instanceMetadata:
+        - key: etcd-host
+          value: {{ properties["etcdHost"] }}
+        - key: environment
+          value: {{ properties["environment"] }}
+        - key: startup-script
+          value: /usr/local/bin/postgresql_patroni_post_init.sh
+      instances:
+        {% for instance in properties["instances"] %}
+        - baseName: {{ properties["environment"] }}-pg-{{ instance["zone"] }}
+          ip: {{ instance["ip"] }}
+          zone: {{ instance["zone"] }}
+        {% endfor %}
+
+  - name: {{ properties["environment"] }}-pg-groups
+    type: managed-instance-group.jinja
+    properties:
+      region: europe-west1
+      instances:
+        {% for instance in properties["instances"] %}
+        - name: group-{{ properties["environment"] }}-pg-{{ instance["zone"] }}
+          baseInstanceName: vm-{{ properties["environment"] }}-pg-group-{{ instance["zone"] }}
+          templateUrl: $(ref.templ-{{ properties["environment"] }}-pg-{{ instance["zone"] }}.selfLink)
+          zone: {{ instance["zone"] }}
+        {% endfor %}
+
+  - name: {{ properties["environment"] }}-pg-scalers
+    type: autoscaler.jinja
+    properties:
+      region: europe-west1
+      instances:
+        {% for instance in properties["instances"] %}
+        - name: scale-{{ properties["environment"] }}-pg-{{ instance["zone"] }}
+          managedInstanceGroupUrl: $(ref.group-{{ properties["environment"] }}-pg-{{ instance["zone"] }}.selfLink)
+          zone: {{ instance["zone"] }}
+        {% endfor %}

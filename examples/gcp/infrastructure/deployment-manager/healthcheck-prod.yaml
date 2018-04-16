@@ -1,0 +1,13 @@
+imports:
+
+  - name: healthcheck.jinja
+    path: templates/healthcheck.jinja
+
+resources:
+
+  - name: prod-pg-health-check
+    type: healthcheck.jinja
+    properties:
+      environment: prod
+      name: customer
+      region: europe-west1

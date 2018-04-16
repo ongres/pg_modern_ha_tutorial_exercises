@@ -1,0 +1,21 @@
+imports:
+
+  - name: etcd-managed-cluster.jinja
+    path: templates/etcd-managed-cluster.jinja
+  - name: private-template.jinja
+    path: templates/private-template.jinja
+  - name: managed-instance-group.jinja
+    path: templates/managed-instance-group.jinja
+
+
+resources:
+
+  - name: prod-etcd-managed-cluster
+    type: etcd-managed-cluster.jinja
+    properties:
+      environment: prod
+      instances:
+        - { ip: 172.16.14.111, zone: b }
+        - { ip: 172.16.14.112, zone: c }
+        - { ip: 172.16.14.113, zone: d }
+      etcdCluster: templ-prep-etcd-b=http://172.16.14.111:2380,templ-prep-etcd-c=http://172.16.14.112:2380,templ-prep-etcd-d=http://172.16.14.113:2380

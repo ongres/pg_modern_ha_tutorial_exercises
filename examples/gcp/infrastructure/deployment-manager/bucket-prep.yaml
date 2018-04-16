@@ -1,0 +1,13 @@
+imports:
+
+  - name: bucket.jinja
+    path: templates/bucket.jinja
+
+resources:
+
+  - name: prep-bucket
+    type: bucket.jinja
+    properties:
+      environment: prep
+      name: customer
+      region: europe-west1

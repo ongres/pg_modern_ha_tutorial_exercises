@@ -1,0 +1,11 @@
+resources:
+
+{% for instance in properties["instances"] %}
+- type: compute.v1.instanceGroupManager
+  name: {{ instance["name"] }}
+  properties:
+    zone: {{ properties["region"] }}-{{instance["zone"]}}
+    instanceTemplate: {{ instance["templateUrl"] }}
+    baseInstanceName: {{ instance["baseInstanceName"] }}
+    targetSize: 1
+{%endfor%}

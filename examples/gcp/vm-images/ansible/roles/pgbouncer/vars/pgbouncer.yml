@@ -1,0 +1,16 @@
+
+postgresql_version: '9.6' # Should be from parent tag
+
+# Pgbouncer configuration
+pgbouncer_username: "pgbouncer"
+pgbouncer_password: 'a' #!vault |
+
+
+pgbouncer_port: 5432
+pgbouncer_ssl: "disable" # https://pgbouncer.github.io/config.html#tls-settings
+pgbouncer_auth_type: "hba" 
+#pgbouncer_auth_hba_file: "{{ postgresql_hba_file }}"
+pgbouncer_auth_hba_file: "{{postgresql_custom_datadir}}/pg_hba.conf"
+pgbouncer_pidfile: "/var/run/pgbouncer/pgbouncer.pid"
+pgbouncer_logfile: "/var/log/pgbouncer/pgbouncer.log"
+pgbouncer_share_dir: "/usr/share/pgbouncer/"

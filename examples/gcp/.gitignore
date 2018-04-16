@@ -1,0 +1,5 @@
+.DS_Store
+ansible/inventory/gcp/hosts
+ansible/*.retry
+vm-images/ansible/*.retry
+.idea/

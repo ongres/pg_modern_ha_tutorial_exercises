@@ -1,0 +1,14 @@
+psycopg2
+
+requests
+
+# Needed for callback plugins
+ansible-lint
+
+# Needed by gsutil
+google_compute_engine
+
+netaddr
+
+apache-libcloud
+libcloud_api

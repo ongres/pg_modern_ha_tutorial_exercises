@@ -1,0 +1,62 @@
+---
+- name: Verify permissions on custom data directory
+  file:
+    path: '{{postgresql_disk_mountdir}}'
+    owner: postgres
+    group: postgres
+    state: directory
+  become: yes
+  tags: patroni
+
+- name: Create {{ patroni_configuration_dir }}
+  file: 
+    state: directory
+    dest: "{{patroni_configuration_dir}}"
+    owner: postgres
+    group: postgres
+  become: yes
+  tags: patroni
+
+- name: Create {{patroni_stats_temp}}
+  file:
+    state: directory
+    dest: "{{patroni_stats_temp}}"
+    owner: postgres
+    group: postgres
+  become: yes
+  tags: patroni
+
+- name: Place postgres.yml in {{ patroni_configuration_dir }}
+  template:
+    src: postgres.yml.j2
+    dest: "{{ patroni_node_configuration }}" #/etc/patroni/postgres.yml
+    backup: yes
+  tags: patroni
+
+- name: Install patroni
+  pip:
+    name: patroni
+  tags: patroni
+
+- name: patronictl wrapper (pctl)
+  template: src=patronictl.j2 dest=/usr/local/bin/pctl mode=0755 backup=yes
+  tags: patroni
+
+- name: create etc eye dir
+  file:
+    state: directory
+    path: /etc/eye
+  with_items:
+    - "/etc/eye"
+    - "/var/log/eye/"
+  tags: patroni
+
+- name: put patroni.rb
+  template: src=patroni.rb.j2 dest=/etc/eye/patroni.rb backup=yes
+  tags: patroni
+
+- name: put a systemctl unit file
+  template: 
+    src: patroni.service.j2
+    dest: /etc/systemd/system/patroni.service
+  tags: patroni

@@ -1,0 +1,38 @@
+---
+# Patroni requirements
+# Following https://github.com/gitinsky/ansible-role-patroni
+
+# System-wide env postgres binary append
+#- name: add {{extra_path}} to path
+#  lineinfile:
+#    dest: /etc/environment
+#    state: present
+#    backrefs: yes
+#    regexp: 'PATH=(["]*)((?!.*?{{extra_path}}).*?)(["]*)$'
+#    line: "PATH=\1\2:{{extra_path}}\3"
+
+- include_vars: patroni.yml
+
+- name: Installing dependencies and other packages
+  include: install_deps.yml
+  tags: patroni
+
+- name: Configure Patroni
+  include: configure_patroni.yml
+  tags: patroni
+
+- name: Setting Patroni services
+  include: setting_service.yml
+  tags: patroni
+
+- name: Reload eye for Pg availability check
+  command: bash -c "source /usr/local/rvm/scripts/rvm && rvm gemset install eye && eye l /etc/eye/patroni.rb"
+  when: patroni_enabled == "true"
+  ignore_errors: true
+  become: true
+  tags: patroni
+
+#- name: Stepping over Postgres services
+#  include: hard_step_over_pg.yml
+#  tags: patroni
+#  when: patroni_enabled == "true"

@@ -1,0 +1,8 @@
+---
+- include: install.yml
+  when: etcd_install|bool
+  tags: etcd_install
+
+- include: service.yml
+  when: etcd_service|bool
+  tags: etcd_service

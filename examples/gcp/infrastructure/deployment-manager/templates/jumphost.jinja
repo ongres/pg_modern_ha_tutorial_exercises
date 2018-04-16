@@ -1,0 +1,12 @@
+resources:
+
+  - name: vm-{{ properties["environment"] }}-jumphost
+    type: vm-public_ssh.jinja
+    properties:
+      name: vm-{{ properties["environment"] }}-jumphost
+      machineType: g1-small
+      sourceImageRelUrl: ubuntu-os-cloud/global/images/ubuntu-1604-xenial-v20171208
+      network: vpc-{{ properties["environment"] }}
+      subnetwork: sub-{{ properties["environment"] }}-europe-west1-pg
+      region: europe-west1
+      zone: europe-west1-b

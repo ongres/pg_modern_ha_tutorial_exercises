@@ -1,0 +1,15 @@
+imports:
+
+  - name: jumphost.jinja
+    path: templates/jumphost.jinja
+  - name: vm-public_ssh.jinja
+    path: templates/vm-public_ssh.jinja
+
+
+resources:
+
+  - name: prep-jumphost
+    type: jumphost.jinja
+    properties:
+      name: prep-jumphost
+      environment: prep

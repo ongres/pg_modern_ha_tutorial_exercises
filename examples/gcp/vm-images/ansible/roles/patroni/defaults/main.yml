@@ -1,0 +1,6 @@
+patroni_pg_default_service: "postgresql-{{ postgresql_version }}"
+patroni_pg_path: "/usr/pgsql-{{ postgresql_version }}/bin"
+patroni_pg_max_connections: 500
+patroni_postgres_port: "{{ postgresql_port }}"
+patroni_archive_command: "/bin/true" # Replace by wal-e
+patroni_node_configuration: "/etc/patroni/postgres.yml"

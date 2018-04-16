@@ -1,0 +1,6 @@
+---
+etcd_service_file_path: /etc/init.d
+etcd_service_file_template: etcd.init.j2
+etcd_service_name: etcd
+etcd_service_file_name: etcd
+etcd_service_file_mode: '0755'

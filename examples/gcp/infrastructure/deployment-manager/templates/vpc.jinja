@@ -1,0 +1,60 @@
+# Creates a vpc and firewall rules
+# All instances have private IP only
+# To reach instances, create a jumphost and associate both an external IP and a network tag of 'public'
+{% set allowedExternalRanges=["130.211.0.0/22", "35.191.0.0/16"]%}
+
+resources:
+
+  - name: vpc-{{ properties["vpcName"] }}
+    type: compute.v1.network
+    properties:
+      autoCreateSubnetworks: false
+      routingConfig:
+        routingMode: REGIONAL
+
+  - name: fw-{{ properties["vpcName"] }}-internal
+    type: compute.v1.firewall
+    properties:
+      description: "Allow all internal traffic"
+      network: $(ref.vpc-{{ properties["vpcName"] }}.selfLink)
+      allowed:
+        - IPProtocol: icmp
+        - IPProtocol: tcp
+          ports: ["0-65535"]
+        - IPProtocol: udp
+          ports: ["0-65535"]
+      direction: INGRESS
+      sourceRanges:
+        - {{ properties["allowFromCidrRange"] }}
+
+  - name: fw-{{ properties["vpcName"] }}-health-check
+    type: compute.v1.firewall
+    properties:
+      description: "Allow health checks to be run"
+      network: $(ref.vpc-{{ properties["vpcName"] }}.selfLink)
+      allowed:
+        - IPProtocol: icmp
+        - IPProtocol: tcp
+          ports: ["0-65535"]
+        - IPProtocol: udp
+          ports: ["0-65535"]
+      direction: INGRESS
+      sourceRanges:
+      {%for allowedExternalRange in allowedExternalRanges%}
+        - {{ allowedExternalRange }}
+      {%endfor%}
+
+  - name: fw-{{ properties["vpcName"] }}-public-ssh-icmp
+    type: compute.v1.firewall
+    properties:
+      description: "Allow ICMP and SSH to [public] instances"
+      network: $(ref.vpc-{{ properties["vpcName"] }}.selfLink)
+      allowed:
+        - IPProtocol: icmp
+        - IPProtocol: tcp
+          ports: [22]
+      direction: INGRESS
+      sourceRanges:
+        - "0.0.0.0/0"
+      targetTags:
+        - public

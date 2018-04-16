@@ -1,0 +1,13 @@
+{% set COMPUTE_URL_BASE = 'https://www.googleapis.com/compute/v1' %}
+{% set PROJECT_URL_BASE = COMPUTE_URL_BASE + '/projects/' + env["project"] %}
+
+
+resources:
+
+  - name: sub-{{ properties["vpcName"] }}-{{ properties["subnetName"] }}
+    type: compute.v1.subnetwork
+    properties:
+      ipCidrRange: {{ properties["ipCidrRange"] }}
+      network: {{ PROJECT_URL_BASE }}/global/networks/vpc-{{ properties["vpcName"] }}
+      region: {{ properties["region"] }}
+      privateIpGoogleAccess: true

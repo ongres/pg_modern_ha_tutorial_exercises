@@ -1,0 +1,19 @@
+imports:
+
+  - name: vpc.jinja
+    path: templates/vpc.jinja
+
+
+resources:
+
+  - name: vpc-prep
+    type: vpc.jinja
+    properties:
+      vpcName: prep
+      allowFromCidrRange: 172.16.0.0/16
+
+  - name: vpc-prod
+    type: vpc.jinja
+    properties:
+      vpcName: prod
+      allowFromCidrRange: 172.16.0.0/16

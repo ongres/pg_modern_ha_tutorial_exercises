@@ -1,0 +1,30 @@
+---
+
+- include_vars: postgresql.yml
+
+- name: Include vars 
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "../vars/{{ ansible_distribution }}.yml"
+    - "../vars/postgresql.yml"
+  tags: [ always, postgresql ]
+
+#-name: Format and setup additional disks for pg_wal/xlog and data 
+# include: devices.yml
+
+- name: Install using distro specific tasks
+  include: "{{ item }}"
+  with_first_found:
+    - "install/{{ ansible_distribution }}.yml"
+  tags: [ always, postgresql ]
+
+- name: Clean PostgreSQL data
+  include: clean_data.yml
+  tags: postgresql
+
+# We use an attached disk _after_ image creation, so this step 
+# has been disabled from playbook
+#- name: Initialize data in the database 
+#  include: init-postgres-db.yml
+#  tags: postgresql
+

@@ -1,0 +1,23 @@
+imports:
+
+  - name: pg-cluster.jinja
+    path: templates/pg-cluster.jinja
+  - name: private-template-with-disk.jinja
+    path: templates/private-template-with-disk.jinja
+  - name: managed-instance-group.jinja
+    path: templates/managed-instance-group.jinja
+  - name: autoscaler.jinja
+    path: templates/autoscaler.jinja
+
+
+
+resources:
+  - name: prod-pg-cluster
+    type: pg-cluster.jinja
+    properties:
+      environment: prod
+      etcdHost: 172.16.14.111
+      instances:
+        - { ip: 172.16.14.101, zone: b }
+        - { ip: 172.16.14.102, zone: c }
+        - { ip: 172.16.14.103, zone: d }

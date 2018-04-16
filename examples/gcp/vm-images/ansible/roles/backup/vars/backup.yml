@@ -1,0 +1,8 @@
+---
+pg_wale_user: 'postgres'
+pg_wale_env_folder: '/etc/wal-e.d/env'
+pg_wale_bucket: 'gs://prep-customer-bucket/'
+pg_wale_bin: 'wal-e' # just using the intalled via pip, use only if we switch source installation
+
+# We shouldnt need any of this by now.
+#pg_wale_bucket_key: 'AIzaSyD19GqYr1jTF0Q0OB-Y3IsLU1Qb5H47mZM' 

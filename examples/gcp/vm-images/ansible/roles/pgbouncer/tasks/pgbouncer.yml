@@ -1,0 +1,148 @@
+---
+- name: Install pgbouncer
+  package:
+    name: "{{ item.name }}" # -{{ item.version }}"
+    state: latest
+  tags: pgbouncer
+  with_items:
+    - { name: 'pgbouncer' } 
+    - { name: 'postgresql-client-{{ postgresql_version }}' } 
+    - { name: 'lsb-base' }
+  register: pgbouncer_installed
+
+- name: Fixing weird hardcode in init.d file
+  lineinfile:
+    path: /etc/default/pgbouncer
+    line: "PIDFILE={{ pgbouncer_pidfile }}"
+  tags: pgbouncer
+
+- name: Ensure log directory
+  file:
+    path: /var/{{ item }}/pgbouncer
+    state: directory
+    owner: postgres
+    group: postgres
+  tags: pgbouncer
+  with_items:
+    - run
+    - log
+
+- name: Ensure log file
+  file:
+    path: /var/log/pgbouncer/pgbouncer.log
+    state: touch
+    owner: postgres
+    group: postgres
+  ignore_errors: yes 
+  tags: pgbouncer
+
+- name: Ensure latest versions of mandatory packages
+  package: name={{ item }} update_cache=true state=latest
+  with_items:
+    - bash
+#    - openssl
+#    - libssl-dev
+#    - libssl-doc
+  tags: pgbouncer
+
+- name: backup installation pgbouncer config file
+  command: mv /etc/pgbouncer/pgbouncer.ini /etc/pgbouncer/pgbouncer.ini.orig
+  tags: pgbouncer
+  when: pgbouncer_installed.changed
+
+- name: Creating pgbouncer user
+  user:
+    name: pgbouncer
+    shell: /bin/bash
+    groups: adm
+    append: yes
+  tags: pgbouncer
+
+- name: Create pgbouncer.ini
+  template:
+    src: pgbouncer.ini.j2
+    dest: /etc/pgbouncer/pgbouncer.ini
+    owner: postgres
+    group: postgres
+    mode: 0600
+  notify: stop pgbouncer
+  when: vagrant_host is not defined
+  tags: pgbouncer
+
+- name: Create pgbouncer.ini
+  template:
+    src: pgbouncer.vagrant.ini.j2
+    dest: /etc/pgbouncer/pgbouncer.ini
+    owner: postgres
+    group: postgres
+    mode: 0600
+  notify: stop pgbouncer
+  when: vagrant_host is defined
+  tags: pgbouncer
+
+# File will be replaced on post-install
+- name: Create userlist.txt
+  template:
+    src: userlist.txt.j2
+    dest: /etc/pgbouncer/userlist.txt
+    owner: postgres
+    group: postgres
+    mode: 0600
+  notify: stop pgbouncer
+  tags: pgbouncer
+
+- name: Copy pgbouncer auth query function
+  copy:
+    src: "pgbouncer_auth_query.sql"
+    dest: "{{pgbouncer_share_dir}}/pgbouncer_auth_query.sql"
+    owner: postgres
+    group: postgres
+  become: true
+  tags: pgbouncer
+
+
+- name: Add systemd file 
+  template:
+    src: pgbouncer.systemd.j2
+    dest: /etc/systemd/system/pgbouncer.service
+  become: yes
+  tags: pgbouncer
+
+#
+# Disabled SSL support.
+#
+# - name: verify pgbouncer ssl key and cert
+#   stat:
+#     path: "/etc/pgbouncer/{{ item }}"
+#   with_items: "{{ pgbouncer_ssl_cert_files }}"
+#   tags: pgbouncer
+#   register: pgbouncer_ssl_server_files
+
+# - name: copy pgbouncer ssl key and cert
+#   copy:
+#     dest: "/etc/pgbouncer/{{ item.0 }}"
+#     src: "files/{{ item.0 }}"
+#     owner: pgbouncer
+#     group: pgbouncer
+#     mode: 0600
+#   tags: pgbouncer
+#   when: not item.1.stat.exists
+#   with_together:
+#     - "{{ pgbouncer_ssl_cert_files }}"
+#     - "{{ pgbouncer_ssl_server_files.results }}"
+
+- name: Enable pgbouncer
+  service:
+    name: pgbouncer
+    enabled: yes
+    state: stopped
+  become: true
+  notify: start pgbouncer
+  tags: pgbouncer
+
+#- name: Start pgbouncer
+#  systemd:
+#    name: pgbouncer
+#    state: started
+#    daemon_reload: yes
+#  tags: pgbouncer

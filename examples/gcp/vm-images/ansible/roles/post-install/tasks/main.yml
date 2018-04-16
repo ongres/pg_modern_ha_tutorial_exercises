@@ -1,0 +1,40 @@
+---
+- include_vars: post-install.yml
+
+- name: Install instance init script
+  template: 
+    src: postgresql_patroni_post_init.sh.j2
+    dest: /usr/local/bin/postgresql_patroni_post_init.sh
+    owner: root
+    group: root
+    mode: 0755
+    backup: yes
+  tags: post-install
+
+
+#- name: Install instance init script
+#  copy:
+#    src: files/postgresql_patroni_post_init.sh
+#    dest: /usr/local/bin/postgresql_patroni_post_init.sh
+#    owner: root
+#    group: root
+#    mode: 0755
+#  tags: post-install
+
+- name: create key directory
+  become: true
+  file:
+    state: directory
+    path: "{{postinstall_key_folder}}"
+  tags: post-install
+
+
+- name: Create env file for the wal-e key
+  copy: 
+    src: "{{item}}_key.json" 
+    dest: "{{postinstall_key_folder}}/{{item}}_key.json"
+    decrypt: yes  # the sauce is here for transparently decrypting the file to the host (> 2.4 ansible)
+  with_items: "{{postinstall_environments}}"
+  become: true
+  ignore_errors: true # Not allways we'll need all the keys here
+  tags: post-install

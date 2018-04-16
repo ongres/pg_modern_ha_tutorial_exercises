@@ -1,0 +1,39 @@
+---
+#
+# Playbook for restoring the DDL custom
+#
+
+- include_vars: postgresql.yml
+
+- name: Stop Postgres for setting up data
+  service:
+    name: postgresql
+    state: stopped
+  notify: stop postgresql
+  tags: postgresql
+
+- name: Removing default pgdata directory
+  file:
+    path: '{{ postgresql_data_directory }}'
+    state: absent
+  become: yes 
+  tags: postgresql
+
+- name: Creating the data directory
+  file:
+    path: '{{postgresql_disk_mountdir}}'
+    owner: postgres
+    group: postgres
+    state: directory
+  become: yes
+  tags: postgresql
+
+- name: Define data partition mount point
+  mount:
+    path: '{{postgresql_disk_mountdir}}'
+    src: '{{gcloud_disk_device}}'
+    fstype: xfs
+    opts: "noatime,noexec,nodiratime,noquota"
+    state: present
+  become: yes
+  tags: postgresql

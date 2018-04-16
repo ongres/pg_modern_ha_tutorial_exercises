@@ -1,0 +1,28 @@
+imports:
+
+  - name: subnet.jinja
+    path: subnet.jinja
+
+
+resources:
+
+  - name: sub-{{ properties["vpcName"] }}-{{ properties["mainSubnetName"] }}
+    type: subnet.jinja
+    properties:
+      vpcName: {{ properties["vpcName"] }}
+      region: {{ properties["region"] }}
+      subnetName: {{ properties["mainSubnetName"] }}
+      ipCidrRange: {{ properties["mainIpCidrRange"] }}
+
+  {% for staticIp in properties["staticIps"] %}
+  - name: ip-{{ properties["vpcName"] }}-{{ properties["mainSubnetName"] }}-{{ staticIp["name"] }}
+    type: compute.v1.address
+    properties:
+      address: {{ staticIp["ip"] }}
+      addressType: INTERNAL
+      region: {{ properties["region"] }}
+      subnetwork: $(ref.sub-{{ properties["vpcName"] }}-{{ properties["mainSubnetName"] }}.selfLink)
+    metadata:
+      dependsOn:
+        - sub-{{ properties["vpcName"] }}-{{ properties["mainSubnetName"] }}
+  {% endfor %}
